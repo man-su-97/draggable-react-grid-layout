@@ -1,18 +1,54 @@
 'use client'
 
-import { PieChart, Pie, Tooltip } from 'recharts'
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+} from 'recharts'
 
-const data = [
-  { name: 'Group A', value: 400 },
-  { name: 'Group B', value: 300 },
-  { name: 'Group C', value: 300 },
-]
+type PieChartWidgetProps = {
+  data?: Array<{ label: string; value: number }>
+  title?: string
+}
 
-export default function PieChartWidget() {
+const COLORS = ['#7dd3b6', '#38bdf8', '#fbbf24', '#f87171']
+
+export default function PieChartWidget({ data, title }: PieChartWidgetProps) {
+  // Demo fallback dataset
+  const demoData = [
+    { label: 'Apples', value: 400 },
+    { label: 'Bananas', value: 300 },
+    { label: 'Cherries', value: 200 },
+  ]
+
+  const chartData = data ?? demoData
+
   return (
-    <PieChart width={300} height={200}>
-      <Pie data={data} dataKey="value" nameKey="name" outerRadius={80} fill="#8884d8" />
-      <Tooltip />
-    </PieChart>
+    <div className="w-full h-full flex flex-col">
+      {title && <h3 className="text-sm font-medium mb-2 px-2">{title}</h3>}
+
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={chartData}
+            dataKey="value"
+            nameKey="label"
+            cx="50%"
+            cy="50%"
+            outerRadius="70%"
+            label
+          >
+            {chartData.map((_, index) => (
+              <Cell key={index} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
   )
 }

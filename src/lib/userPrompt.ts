@@ -1,0 +1,25 @@
+export const getPrompt = (text: string) => `
+The user said: "${text}".
+
+Return ONLY a valid JSON object matching this schema:
+{
+  type: "line" | "bar" | "pie" | "image" | "video",
+  title?: string,
+  data?: [{ label: string, value: number }],
+  src?: string
+}
+
+Strict rules:
+- For "line", "bar", "pie":
+  • Always return a "data" array with at least 3 objects shaped like {label: string, value: number}.
+  • "label" should be a short category (e.g. "Q1", "Sales", "Apples").
+  • "value" should be a realistic number (integer or float).
+- For "image":
+  • Always set "src" to a valid external image URL, e.g. "https://picsum.photos/800/600" or another free stock image.
+  • Do NOT use local paths like "/images/...".
+- For "video":
+  • Always set "src" to a valid external MP4 video URL.
+  • Example: "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4" or "https://player.vimeo.com/external/3191573.sd.mp4".
+  • Do NOT use local paths like "/videos/...".
+- Never include explanations, comments, markdown, or extra text — ONLY the raw JSON object.
+`;

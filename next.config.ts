@@ -1,19 +1,24 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  reactStrictMode: true,
-  images:{
-  remotePatterns: [
-    {
-      protocol: "https",
-      hostname: "picsum.photos",
-      pathname: "/**",
-    },
-    
-  ],
-  }
-
+	reactStrictMode: true,
+	images: {
+		remotePatterns: [
+			{
+				protocol: "https",
+				hostname: "picsum.photos",
+				pathname: "/**",
+			},
+			{
+				protocol: "https",
+				hostname: "storage.googleapis.com", // common for Gemini image outputs
+			},
+			{
+				protocol: "https",
+				hostname: "**.googleusercontent.com", // fallback for signed Google URLs
+			},
+		],
+	},
 };
 
 export default nextConfig;

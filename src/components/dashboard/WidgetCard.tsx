@@ -14,21 +14,23 @@ export default function WidgetCard({
   onRemove: (id: string) => void
 }) {
   return (
-    <Card className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 drag-handle">
-        <div className="text-sm font-medium capitalize">{widget.type} widget</div>
+    <Card className="h-full flex flex-col items-center">
+      <div className="w-full flex items-center justify-between px-4 py-2 border-b border-white/5 drag-handle">
+        <div className="text-sm font-medium capitalize">
+          {widget.payload?.title || `${widget.type} widget`}
+        </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => onRemove(widget.id)}
-          className="h-6 w-6"
+          className="h-6 w-6 no-drag"
         >
           <X className="w-4 h-4" />
         </Button>
       </div>
 
-      <div className="flex-1 min-h-0">
-        <WidgetRenderer type={widget.type} />
+      <div className="flex-1 w-full min-h-0">
+        <WidgetRenderer type={widget.type} payload={widget.payload} />
       </div>
     </Card>
   )
