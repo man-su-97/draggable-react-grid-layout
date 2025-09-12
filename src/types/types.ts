@@ -1,4 +1,4 @@
-export type WidgetType = "line" | "bar" | "pie" | "image" | "video";
+export type WidgetType = "line" | "bar" | "pie" | "image" | "video" | "map";
 
 export type Widget = {
   id: string;

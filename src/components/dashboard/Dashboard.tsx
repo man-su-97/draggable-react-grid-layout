@@ -15,7 +15,8 @@ import {
 
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { FileArchive, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import VoiceInput from "../VoiceInput/VoiceInput";
 
 const STORAGE_KEY = "dashboard-widgets";
 
@@ -151,7 +152,7 @@ export default function Dashboard() {
 	return (
 		<div className="flex flex-col min-h-[calc(100vh-80px)]">
 			<div className="flex flex-wrap items-center gap-3 px-4 my-10">
-				<h2 className="text-lg font-semibold">My Dashboard</h2>
+				<h2 className="text-xl font-semibold ">Ai Dashboard</h2>
 
 				<div className="flex gap-2 ml-auto">
 					<Input
@@ -160,6 +161,12 @@ export default function Dashboard() {
 						value={command}
 						onChange={(e) => setCommand(e.target.value)}
 						className="border border-gray-600 bg-black text-white rounded px-2 py-1 text-sm w-64"
+					/>
+					<VoiceInput
+						onResult={(text) => {
+							setCommand(text);
+							runAICommand(text); // auto-run AI after speaking
+						}}
 					/>
 					{/* <Button
 						onClick={() => {
@@ -204,6 +211,9 @@ export default function Dashboard() {
 							<DropdownMenuItem onClick={() => addWidget("pie")}>
 								Pie Chart
 							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => addWidget("map")}>
+								Map Widget
+							</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => addWidget("image")}>
 								Image Card
 							</DropdownMenuItem>
@@ -218,9 +228,9 @@ export default function Dashboard() {
 				<GridLayout
 					className="layout"
 					layout={widgets.map((widget) => widget.layout)}
-					cols={12}
+					cols={24}
 					rowHeight={100}
-					width={1200}
+					width={1900}
 					onLayoutChange={updateLayout}
 					draggableCancel=".no-drag"
 					compactType="vertical"

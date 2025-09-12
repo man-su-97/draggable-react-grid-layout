@@ -12,28 +12,33 @@ import {
 } from 'recharts'
 
 type LineChartWidgetProps = {
-  data?: Array<{ label: string; value: number }>
+  data?: Array<Record<string, number | string>>
   title?: string
 }
 
 export default function LineChartWidget({ data, title }: LineChartWidgetProps) {
-  // Fallback demo dataset
+  // Example multi-series demo data
   const demoData = [
-    { label: 'Jan', value: 400 },
-    { label: 'Feb', value: 300 },
-    { label: 'Mar', value: 200 },
-    { label: 'Apr', value: 278 },
-    { label: 'May', value: 189 },
-    { label: 'Jun', value: 239 },
-    { label: 'Jul', value: 349 },
+    { label: 'Jan', sales: 400, revenue: 240 },
+    { label: 'Feb', sales: 300, revenue: 139 },
+    { label: 'Mar', sales: 200, revenue: 980 },
+    { label: 'Apr', sales: 278, revenue: 390 },
+    { label: 'May', sales: 189, revenue: 480 },
+    { label: 'Jun', sales: 239, revenue: 650 },
+    { label: 'Jul', sales: 349, revenue: 700 },
   ]
 
   const chartData = data ?? demoData
 
+  // 🎨 Assign a palette of colors
+  const colors = ['#f87171', '#60a5fa', '#34d399', '#fbbf24', '#a78bfa']
+
+  // Dynamically pick all numeric keys except "label"
+  const dataKeys = Object.keys(chartData[0] || {}).filter((k) => k !== 'label')
+
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Title if available */}
-      {title && <h3 className="text-sm font-medium mb-2 px-2">{title}</h3>}
+      {title && <h3 className="text-lg font-semibold mb-2">{title}</h3>}
 
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
@@ -45,14 +50,17 @@ export default function LineChartWidget({ data, title }: LineChartWidgetProps) {
           <YAxis />
           <Tooltip />
           <Legend />
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke="#7dd3b6"
-            strokeWidth={2}
-            dot={{ r: 3 }}
-            activeDot={{ r: 6 }}
-          />
+          {dataKeys.map((key, index) => (
+            <Line
+              key={key}
+              type="monotone"
+              dataKey={key}
+              stroke={colors[index % colors.length]}
+              strokeWidth={2}
+              dot={{ r: 3 }}
+              activeDot={{ r: 6 }}
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
     </div>

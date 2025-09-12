@@ -15,10 +15,10 @@ const geistMono = Geist_Mono({
 
 export default function Home() {
 	return (
-		<div className={`${geistSans.className} ${geistMono.className} font-sans`}>
-				<NavBar /> 
-        {/* <LandingSection/> */}
-			<Dashboard/>
+		<div className={`${geistSans.className} ${geistMono.className} font-sans bg-black`}>
+			<NavBar />
+			<Dashboard />
+			<LandingSection />
 		</div>
 	);
 }
