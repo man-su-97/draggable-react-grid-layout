@@ -1,80 +1,150 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Button } from "../ui/button";
+import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff } from "lucide-react";
-import { toast } from "sonner";
 
-type VoiceInputProps = {
-  onResult: (text: string) => void;
-  lang?: string;
+type SmartVoiceInputProps = {
+  placeholder?: string;
+  onResult?: (text: string) => void;
+  asButton?: boolean; // 🔹 if true, render only mic button
 };
 
-export default function VoiceInput({ onResult, lang = "en-US" }: VoiceInputProps) {
-  const [listening, setListening] = useState(false);
+export default function SmartVoiceInput({
+  placeholder,
+  onResult,
+  asButton = false,
+}: SmartVoiceInputProps) {
+  const [recording, setRecording] = useState(false);
+  const [text, setText] = useState("");
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationIdRef = useRef<number | null>(null);
 
-  const initRecognition = () => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    if (!SpeechRecognition) {
-      toast.error("Your browser does not support speech recognition.");
-      return null;
-    }
+      // Setup audio context
+      audioCtxRef.current = new AudioContext();
+      const source = audioCtxRef.current.createMediaStreamSource(stream);
+      analyserRef.current = audioCtxRef.current.createAnalyser();
+      analyserRef.current.fftSize = 128;
+      source.connect(analyserRef.current);
 
-    const recognition: SpeechRecognition = new SpeechRecognition();
-    recognition.lang = lang;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => {
-      setListening(true);
-      toast.info("Listening... Speak your command clearly.");
-    };
-
-    recognition.onend = () => setListening(false);
-
-    recognition.onerror = (e) => {
-      console.error("Speech recognition error:", e);
-      setListening(false);
-
-      if (e.error === "not-allowed") {
-        toast.error("Microphone blocked. Please allow microphone access in browser settings.");
-      } else {
-        toast.error("Speech recognition failed. Try again.");
+      // SpeechRecognition setup
+      const SpeechRecognition =
+        window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Speech recognition not supported in this browser.");
+        return;
       }
-    };
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const text = event.results[0][0].transcript;
-      onResult(text);
-      toast.success(`You said: "${text}"`);
-    };
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
 
-    recognitionRef.current = recognition;
-    return recognition;
-  };
+      recognition.onresult = (e: SpeechRecognitionEvent) => {
+        const transcript = e.results[0][0].transcript;
+        setText(transcript);
+        onResult?.(transcript);
+      };
 
-  const handleToggle = () => {
-    if (listening) {
-      recognitionRef.current?.stop();
-    } else {
-      const recognition = initRecognition();
-      recognition?.start();
+      recognition.onend = () => stopRecording();
+
+      recognition.start();
+      recognitionRef.current = recognition;
+
+      setRecording(true);
+    } catch (err) {
+      console.error("Mic error:", err);
     }
   };
 
-  return (
-    <Button
-      onClick={handleToggle}
-      variant={listening ? "destructive" : "outline"}
-      className={`flex items-center gap-2 transition ${
-        listening ? "animate-pulse" : ""
-      }`}
+  const stopRecording = () => {
+    setRecording(false);
+    recognitionRef.current?.stop();
+    audioCtxRef.current?.close();
+    if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
+  };
+
+  // 🔥 Effect runs after canvas is mounted when recording=true
+  useEffect(() => {
+    if (recording && canvasRef.current && analyserRef.current) {
+      const ctx = canvasRef.current.getContext("2d")!;
+      const bufferLength = analyserRef.current.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      const render = () => {
+        animationIdRef.current = requestAnimationFrame(render);
+
+        analyserRef.current!.getByteFrequencyData(dataArray);
+
+        ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
+
+        const barWidth = (canvasRef.current!.width / bufferLength) * 1.5;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = dataArray[i] / 2;
+          ctx.fillStyle = "#4f46e5";
+          ctx.fillRect(
+            x,
+            canvasRef.current!.height - barHeight,
+            barWidth,
+            barHeight
+          );
+          x += barWidth + 1;
+        }
+      };
+
+      render();
+    }
+
+    return () => {
+      if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
+    };
+  }, [recording]);
+
+  // 🔹 Mic button UI
+  const micButton = (
+    <button
+      type="button"
+      onClick={recording ? stopRecording : startRecording}
+      className="ml-2 p-1 rounded-full bg-muted hover:bg-muted/80"
     >
-      {listening ? <MicOff size={16} /> : <Mic size={16} />}
-      {listening ? "Stop" : "Speak"}
-    </Button>
+      {recording ? (
+        <MicOff size={18} className="text-red-500" />
+      ) : (
+        <Mic size={18} />
+      )}
+    </button>
+  );
+
+  if (asButton) {
+    // 🎤 Mic only mode
+    return micButton;
+  }
+
+  // 📝 Full input + mic mode
+  return (
+    <div className="flex items-center justify-between border border-border rounded px-2 py-1 w-72 bg-card text-card-foreground">
+      <div className="">
+        {!recording ? (
+          <input
+            type="text"
+            className="flex-1 bg-transparent outline-none"
+            placeholder={placeholder}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+        ) : (
+          <canvas ref={canvasRef} width={200} height={20} />
+        )}
+      </div>
+      {micButton}
+    </div>
   );
 }

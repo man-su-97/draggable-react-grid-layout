@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import GridLayout, { Layout } from "react-grid-layout";
 import { Button } from "@/components/ui/button";
-import { Input } from "../ui/input";
+import { Input } from "@/components/ui/input";
 import WidgetCard from "./WidgetCard";
 import { Widget, WidgetType } from "@/types/types";
 import {
@@ -16,7 +16,7 @@ import {
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { Loader2 } from "lucide-react";
-import VoiceInput from "../VoiceInput/VoiceInput";
+import SmartVoiceInput from "../VoiceInput/VoiceInput";
 
 const STORAGE_KEY = "dashboard-widgets";
 
@@ -38,6 +38,7 @@ export default function Dashboard() {
 	const [command, setCommand] = useState("");
 	const [loading, setLoading] = useState(false);
 
+	// 🔹 Load from localStorage
 	useEffect(() => {
 		if (typeof window === "undefined") return;
 		const raw = localStorage.getItem(STORAGE_KEY);
@@ -58,14 +59,11 @@ export default function Dashboard() {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_WIDGETS));
 	}, []);
 
-	// Persist widgets on change
-
+	// 🔹 Persist widgets
 	useEffect(() => {
 		if (typeof window === "undefined") return;
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets));
 	}, [widgets]);
-
-	// Reset dashboard → restore defaults
 
 	const resetDashboard = () => {
 		setWidgets(DEFAULT_WIDGETS);
@@ -89,9 +87,14 @@ export default function Dashboard() {
 					title: responseJson.title,
 					data: responseJson.data,
 					src: responseJson.src,
+					location: responseJson.location,
+					coordinates: responseJson.coordinates,
+					description: responseJson.description,
+					icon: responseJson.icon,
+					temp: responseJson.temp,
 				});
 			} else {
-				alert("AI could not understand your prompt !");
+				alert("AI could not understand your prompt!");
 			}
 		} catch (err) {
 			console.error("AI command error", err);
@@ -118,8 +121,8 @@ export default function Dashboard() {
 			y: row * h,
 			w,
 			h,
-			minW: 2,
-			minH: 2,
+			minW: type === "weather" ? 6 : 3,
+			minH: 3,
 		};
 
 		const newWidget: Widget = {
@@ -150,40 +153,38 @@ export default function Dashboard() {
 	};
 
 	return (
-		<div className="flex flex-col min-h-[calc(100vh-80px)]">
-			<div className="flex flex-wrap items-center gap-3 px-4 my-10">
-				<h2 className="text-xl font-semibold ">Ai Dashboard</h2>
+		<div className="flex flex-col min-h-[calc(100vh-80px)] bg-background text-foreground">
+			{/* 🔹 Header */}
+			<div className="flex flex-wrap items-center gap-3 px-4 my-8">
+				<h2 className="text-2xl font-bold tracking-tight">AI Dashboard</h2>
 
-				<div className="flex gap-2 ml-auto">
+				<div className="flex gap-2 ml-auto items-center">
+					{/* Input box */}
 					<Input
 						type="text"
 						placeholder="Ask AI to add a widget..."
 						value={command}
 						onChange={(e) => setCommand(e.target.value)}
-						className="border border-gray-600 bg-black text-white rounded px-2 py-1 text-sm w-64"
+						className="w-64"
 					/>
-					<VoiceInput
+
+					{/* Voice mic button */}
+					<SmartVoiceInput
+						asButton
 						onResult={(text) => {
 							setCommand(text);
-							runAICommand(text); // auto-run AI after speaking
+							runAICommand(text);
 						}}
 					/>
-					{/* <Button
-						onClick={() => {
-							runAICommand(command);
-							setCommand("");
-						}}
-						className="bg-green-600 hover:bg-green-700"
-					>
-						Run AI
-					</Button> */}
+
+					{/* Run AI button */}
 					<Button
 						onClick={() => {
 							runAICommand(command);
 							setCommand("");
 						}}
 						disabled={loading}
-						className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+						className="bg-primary text-primary-foreground hover:bg-blue-600 flex items-center gap-2"
 					>
 						{loading ? (
 							<>
@@ -195,11 +196,12 @@ export default function Dashboard() {
 						)}
 					</Button>
 
-					{/* Reset button */}
-
+					{/* Dropdown menu */}
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button className="bg-white/5">Add Widget +</Button>
+							<Button className="bg-muted text-muted-foreground hover:bg-muted/80">
+								Add Widget +
+							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent>
 							<DropdownMenuItem onClick={() => addWidget("line")}>
@@ -214,6 +216,13 @@ export default function Dashboard() {
 							<DropdownMenuItem onClick={() => addWidget("map")}>
 								Map Widget
 							</DropdownMenuItem>
+							<DropdownMenuItem
+								onClick={
+									() => addWidget("weather", { coordinates: "current" }) // ✅ show current location
+								}
+							>
+								Weather Card
+							</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => addWidget("image")}>
 								Image Card
 							</DropdownMenuItem>
@@ -224,6 +233,8 @@ export default function Dashboard() {
 					</DropdownMenu>
 				</div>
 			</div>
+
+			{/* 🔹 Grid */}
 			<div className="flex-1">
 				<GridLayout
 					className="layout"
@@ -244,10 +255,11 @@ export default function Dashboard() {
 				</GridLayout>
 			</div>
 
+			{/* 🔹 Reset */}
 			<div className="flex justify-center mt-6 px-6">
 				<Button
 					onClick={resetDashboard}
-					className="bg-red-600 hover:bg-red-700 "
+					className="bg-destructive text-white hover:bg-rose-700"
 				>
 					Reset
 				</Button>

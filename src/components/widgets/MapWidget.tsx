@@ -4,34 +4,13 @@ import dynamic from "next/dynamic";
 import { Suspense, useMemo } from "react";
 import "leaflet/dist/leaflet.css";
 
-// ✅ Dynamically import react-leaflet components (client-only, no SSR)
-const MapContainer = dynamic(
-  () => import("react-leaflet").then((m) => m.MapContainer),
-  { ssr: false }
-);
-const TileLayer = dynamic(
-  () => import("react-leaflet").then((m) => m.TileLayer),
-  { ssr: false }
-);
-const Marker = dynamic(
-  () => import("react-leaflet").then((m) => m.Marker),
-  { ssr: false }
-);
-const Popup = dynamic(
-  () => import("react-leaflet").then((m) => m.Popup),
-  { ssr: false }
-);
+const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false });
+const Marker = dynamic(() => import("react-leaflet").then((m) => m.Marker), { ssr: false });
+const Popup = dynamic(() => import("react-leaflet").then((m) => m.Popup), { ssr: false });
 
-type MarkerData = {
-  name: string;
-  coordinates: [number, number];
-  color?: string;
-};
-
-type MapWidgetProps = {
-  title?: string;
-  data?: MarkerData[];
-};
+type MarkerData = { name: string; coordinates: [number, number]; color?: string };
+type MapWidgetProps = { title?: string; data?: MarkerData[] };
 
 const demoMarkers: MarkerData[] = [
   { name: "New York", coordinates: [40.7128, -74.006] },
@@ -43,19 +22,15 @@ const demoMarkers: MarkerData[] = [
 export default function MapWidget({ title, data }: MapWidgetProps) {
   const markers = data && data.length > 0 ? data : demoMarkers;
 
-  // ✅ Only load Leaflet icons client-side
   const createIcon = useMemo(() => {
     if (typeof window === "undefined") return undefined;
-    // Lazy require Leaflet
     const L = require("leaflet");
 
     return (color: string) =>
       new L.Icon({
         iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        iconRetinaUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        shadowUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
         iconSize: [25, 41],
         iconAnchor: [12, 41],
         popupAnchor: [1, -34],
@@ -64,22 +39,18 @@ export default function MapWidget({ title, data }: MapWidgetProps) {
   }, []);
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {title && <h3 className="text-lg font-semibold mb-2">{title}</h3>}
+    <div className="w-full h-full flex flex-col bg-card border border-border rounded-md">
+      {title && (
+        <h3 className="text-lg font-semibold mb-2 px-2 text-card-foreground">
+          {title}
+        </h3>
+      )}
 
       <div className="flex-1 relative rounded-md overflow-hidden shadow">
         <Suspense
-          fallback={
-            <div className="flex items-center justify-center h-full">
-              🗺️ Loading map...
-            </div>
-          }
+          fallback={<div className="flex items-center justify-center h-full text-muted-foreground">🗺️ Loading map...</div>}
         >
-          <MapContainer
-            center={[20, 0]}
-            zoom={2}
-            className="absolute inset-0 w-full h-full"
-          >
+          <MapContainer center={[20, 0]} zoom={2} className="absolute inset-0 w-full h-full">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/">OSM</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -87,11 +58,7 @@ export default function MapWidget({ title, data }: MapWidgetProps) {
 
             {createIcon &&
               markers.map((m) => (
-                <Marker
-                  key={m.name}
-                  position={m.coordinates}
-                  icon={createIcon(m.color || "blue")}
-                >
+                <Marker key={m.name} position={m.coordinates} icon={createIcon(m.color || "blue")}>
                   <Popup>
                     <strong>{m.name}</strong>
                   </Popup>

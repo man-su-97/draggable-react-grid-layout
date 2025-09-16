@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   ResponsiveContainer,
@@ -7,38 +7,38 @@ import {
   Cell,
   Tooltip,
   Legend,
-} from "recharts";
+  Sector,
+} from 'recharts'
+import { AnimatedTooltip } from '../ui/AnimatedToolTip';
 
 type PieChartWidgetProps = {
-  data?: Array<{ label: string; value: number }>;
-  title?: string;
-};
+  data?: Array<{ label: string; value: number }>
+  title?: string
+}
 
-// 🎨 Expanded color palette (Tailwind-inspired)
 const COLORS = [
-  "#f87171", // red
-  "#60a5fa", // blue
-  "#34d399", // green
-  "#fbbf24", // yellow
-  "#a78bfa", // purple
-  "#fb923c", // orange
-  "#22d3ee", // cyan
-  "#e879f9", // pink
-];
+  'var(--color-chart-1)',
+  'var(--color-chart-2)',
+  'var(--color-chart-3)',
+  'var(--color-chart-4)',
+  'var(--color-chart-5)',
+]
+
+const HIGHLIGHT_COLOR = 'var(--color-card-foreground)' 
 
 export default function PieChartWidget({ data, title }: PieChartWidgetProps) {
   const demoData = [
-    { label: "Apples", value: 400 },
-    { label: "Bananas", value: 300 },
-    { label: "Cherries", value: 200 },
-    { label: "Dates", value: 100 },
-  ];
+    { label: 'Apples', value: 400 },
+    { label: 'Bananas', value: 300 },
+    { label: 'Cherries', value: 200 },
+    { label: 'Dates', value: 100 },
+  ]
 
-  const chartData = data ?? demoData;
+  const chartData = data ?? demoData
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {title && <h3 className="text-lg font-semibold mb-2">{title}</h3>}
+    <div className="w-full h-full flex flex-col bg-card border border-border rounded-md p-2">
+      {title && <h3 className="text-lg font-semibold mb-2 text-card-foreground">{title}</h3>}
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -47,22 +47,37 @@ export default function PieChartWidget({ data, title }: PieChartWidgetProps) {
             nameKey="label"
             cx="50%"
             cy="50%"
-            innerRadius="40%" // donut style
+            innerRadius="40%"
             outerRadius="70%"
             paddingAngle={3}
             label
+            activeShape={(props) => (
+              <g>
+                <text
+                  x={props.cx}
+                  y={props.cy}
+                  dy={-10}
+                  textAnchor="middle"
+                  fill="var(--color-primary)"
+                >
+                  {props.name}
+                </text>
+                <Sector
+                  {...props}
+                  outerRadius={props.outerRadius + 8}
+                  fill={HIGHLIGHT_COLOR} 
+                />
+              </g>
+            )}
           >
             {chartData.map((_, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
-              />
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip />
+          <Tooltip content={<AnimatedTooltip />} />
           <Legend />
         </PieChart>
       </ResponsiveContainer>
     </div>
-  );
+  )
 }

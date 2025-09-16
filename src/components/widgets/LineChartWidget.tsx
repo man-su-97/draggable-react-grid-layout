@@ -10,6 +10,7 @@ import {
   Tooltip,
   Legend,
 } from 'recharts'
+import { AnimatedTooltip } from '../ui/AnimatedToolTip'
 
 type LineChartWidgetProps = {
   data?: Array<Record<string, number | string>>
@@ -17,7 +18,6 @@ type LineChartWidgetProps = {
 }
 
 export default function LineChartWidget({ data, title }: LineChartWidgetProps) {
-  // Example multi-series demo data
   const demoData = [
     { label: 'Jan', sales: 400, revenue: 240 },
     { label: 'Feb', sales: 300, revenue: 139 },
@@ -29,26 +29,25 @@ export default function LineChartWidget({ data, title }: LineChartWidgetProps) {
   ]
 
   const chartData = data ?? demoData
+  const colors = [
+    'var(--color-chart-1)',
+    'var(--color-chart-2)',
+    'var(--color-chart-3)',
+    'var(--color-chart-4)',
+    'var(--color-chart-5)',
+  ]
 
-  // 🎨 Assign a palette of colors
-  const colors = ['#f87171', '#60a5fa', '#34d399', '#fbbf24', '#a78bfa']
-
-  // Dynamically pick all numeric keys except "label"
   const dataKeys = Object.keys(chartData[0] || {}).filter((k) => k !== 'label')
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {title && <h3 className="text-lg font-semibold mb-2">{title}</h3>}
-
+    <div className="w-full h-full flex flex-col bg-card border border-border rounded-md p-2">
+      {title && <h3 className="text-lg font-semibold mb-2 text-card-foreground">{title}</h3>}
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={chartData}
-          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="label" />
-          <YAxis />
-          <Tooltip />
+        <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-muted)" />
+          <XAxis dataKey="label" stroke="var(--color-muted-foreground)" />
+          <YAxis stroke="var(--color-muted-foreground)" />
+          <Tooltip content={<AnimatedTooltip />} />
           <Legend />
           {dataKeys.map((key, index) => (
             <Line
@@ -57,8 +56,19 @@ export default function LineChartWidget({ data, title }: LineChartWidgetProps) {
               dataKey={key}
               stroke={colors[index % colors.length]}
               strokeWidth={2}
-              dot={{ r: 3 }}
-              activeDot={{ r: 6 }}
+              dot={{
+                r: 3,
+                stroke: 'var(--color-background)',
+                strokeWidth: 1,
+                fill: colors[index % colors.length],
+              }}
+              activeDot={{
+                r: 7,
+                fill: 'var(--color-primary)',
+                stroke: 'white',
+                strokeWidth: 2,
+                style: { filter: 'drop-shadow(0 0 6px var(--color-primary))' },
+              }}
             />
           ))}
         </LineChart>

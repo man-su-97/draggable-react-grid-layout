@@ -4,7 +4,7 @@ import GlowSection from "@/components/widgets/GlowWidget";
 export const LandingSection = () => {
 	return (
 		<main >
-			<div className="h-[10vh]"  />
+			<div className="h-[20vh]"  />
 			<GlowSection />
 		</main>
 	);

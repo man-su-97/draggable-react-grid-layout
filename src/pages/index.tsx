@@ -1,6 +1,4 @@
-import { NavBar } from "@/components/navbar/navbar";
 import Dashboard from "@/components/dashboard/Dashboard";
-import { LandingSection } from "@/layout/LandingSection";
 import { Geist, Geist_Mono } from "next/font/google";
 
 const geistSans = Geist({
@@ -16,9 +14,11 @@ const geistMono = Geist_Mono({
 export default function Home() {
 	return (
 		<div className={`${geistSans.className} ${geistMono.className} font-sans bg-black`}>
-			<NavBar />
+			{/* <NavBar /> */}
 			<Dashboard />
-			<LandingSection />
+			{/* <WeatherCard/> */}
+			{/* <LandingSection /> */}
+			{/* <AudioVisualizerTest /> */}
 		</div>
 	);
 }

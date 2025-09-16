@@ -3,11 +3,41 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getPrompt } from "@/lib/userPrompt";
 
 const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const WEATHER_API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY!;
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+// 🔹 Utility: fetch weather by lat/lon
+async function getWeather(lat: number, lon: number) {
+  const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${WEATHER_API_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch weather data");
+  const data = await res.json();
+
+  return {
+    description: data.weather?.[0]?.description ?? "unknown",
+    icon: data.weather?.[0]?.icon ?? "01d",
+    temp: {
+      current: data.main?.temp ?? 0,
+      min: data.main?.temp_min ?? 0,
+      max: data.main?.temp_max ?? 0,
+    },
+  };
+}
+
+// 🔹 Utility: geocode city → lat/lon
+async function geocodeCity(city: string) {
+  const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
+    city
+  )}&limit=1&appid=${WEATHER_API_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to geocode city");
+  const data = await res.json();
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error(`No coordinates found for ${city}`);
+  }
+  return { lat: data[0].lat, lon: data[0].lon };
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -38,9 +68,38 @@ export default async function handler(
     if (
       !parsed ||
       !parsed.type ||
-      !["line", "bar", "pie", "image", "video", "map"].includes(parsed.type) // ✅ added map
+      !["line", "bar", "pie", "image", "video", "map", "weather"].includes(parsed.type)
     ) {
       return res.status(400).json({ error: "Could not parse widget" });
+    }
+
+    // ✅ WEATHER handling
+    if (parsed.type === "weather") {
+      try {
+        if (parsed.coordinates === "current") {
+          // Let the frontend handle geolocation
+          return res.status(200).json(parsed);
+        }
+
+        if (Array.isArray(parsed.coordinates)) {
+          const [lat, lon] = parsed.coordinates;
+          const weather = await getWeather(lat, lon);
+          parsed.coordinates = [lat, lon];
+          Object.assign(parsed, weather);
+          return res.status(200).json(parsed);
+        }
+
+        if (parsed.location) {
+          const { lat, lon } = await geocodeCity(parsed.location);
+          const weather = await getWeather(lat, lon);
+          parsed.coordinates = [lat, lon];
+          Object.assign(parsed, weather);
+          return res.status(200).json(parsed);
+        }
+      } catch (err) {
+        console.error("Weather fetch failed:", err);
+        return res.status(500).json({ error: "Weather lookup failed" });
+      }
     }
 
     // ✅ IMAGE via Hugging Face API
@@ -68,7 +127,6 @@ export default async function handler(
 
         const result = await hfResponse.json();
         const base64 = result.data?.[0]?.b64_json;
-
         parsed.src = base64 ? `data:image/png;base64,${base64}` : null;
       } catch (err) {
         console.error("HF image generation failed:", err);
@@ -76,13 +134,14 @@ export default async function handler(
       }
     }
 
-    // ✅ Video fallback
+    // ✅ VIDEO fallback
     if (parsed.type === "video") {
       parsed.src =
+        parsed.src ??
         "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4";
     }
 
-    // ✅ Map validation
+    // ✅ MAP validation
     if (parsed.type === "map") {
       if (!Array.isArray(parsed.data)) {
         parsed.data = [];
@@ -105,7 +164,6 @@ export default async function handler(
         }));
 
       if (parsed.data.length === 0) {
-        // fallback demo data
         parsed.data = [
           { name: "New York", coordinates: [40.7128, -74.006], color: "blue" },
           { name: "London", coordinates: [51.5072, -0.1276], color: "green" },

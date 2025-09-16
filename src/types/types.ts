@@ -1,4 +1,8 @@
-export type WidgetType = "line" | "bar" | "pie" | "image" | "video" | "map";
+export type WidgetType = "line" | "bar" | "pie" | "image" | "video" | "map" | "weather";
+
+export type ChartData = { label: string; value: number };
+export type MapData = { name: string; coordinates: [number, number]; color?: string };
+export type WeatherTemp = { current: number; min: number; max: number };
 
 export type Widget = {
   id: string;
@@ -13,8 +17,16 @@ export type Widget = {
     minH?: number;
   };
   payload?: {
+    // common
     title?: string;
-    data?: Array<{ label: string; value: number }>;
+    data?: ChartData[] | MapData[];
     src?: string;
+
+    // weather-specific
+    location?: string;
+    coordinates?: [number, number] | "current";
+    description?: string;
+    icon?: string;
+    temp?: WeatherTemp;
   };
 };
