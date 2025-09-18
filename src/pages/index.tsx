@@ -16,9 +16,7 @@ export default function Home() {
 		<div className={`${geistSans.className} ${geistMono.className} font-sans bg-black`}>
 			{/* <NavBar /> */}
 			<Dashboard />
-			{/* <WeatherCard/> */}
 			{/* <LandingSection /> */}
-			{/* <AudioVisualizerTest /> */}
 		</div>
 	);
 }

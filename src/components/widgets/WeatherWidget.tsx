@@ -1,7 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WiDaySunny, WiCloudy, WiRain, WiSnow } from "react-icons/wi";
+import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiFog } from "react-icons/wi";
+
+type Coordinates = [number, number] | "current";
 
 interface WeatherData {
   description: string;
@@ -11,15 +13,21 @@ interface WeatherData {
 
 interface WeatherCardProps {
   location?: string;
-  coordinates?: [number, number] | "current";
+  coordinates?: Coordinates;
   description?: string;
   icon?: string;
   temp?: { current: number; min: number; max: number };
 }
 
-const NEXT_PUBLIC_WEATHER_API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
+interface WeatherApiSuccess extends WeatherData {
+  coordinates: [number, number];
+}
+interface WeatherApiError {
+  error: string;
+}
+type WeatherApiResponse = WeatherApiSuccess | WeatherApiError;
 
-export default function WeatherCard({
+export default function WeatherWidget({
   location,
   coordinates,
   description,
@@ -27,58 +35,63 @@ export default function WeatherCard({
   temp,
 }: WeatherCardProps) {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(
-    temp && description && icon
-      ? { description, icon, temp }
-      : null
+    temp && description && icon ? { description, icon, temp } : null
   );
-  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(
-    Array.isArray(coordinates)
-      ? { lat: coordinates[0], lon: coordinates[1] }
-      : null
+  const [coords, setCoords] = useState<[number, number] | null>(
+    Array.isArray(coordinates) ? coordinates : null
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 🔹 Fetch weather by lat/lon
-  const fetchWeather = async (lat: number, lon: number) => {
+  const fetchWeather = async (args: { lat?: number; lon?: number; city?: string }) => {
     try {
       setLoading(true);
       setError(null);
 
-      const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${NEXT_PUBLIC_WEATHER_API_KEY}`;
-      const res = await fetch(url);
+      const res = await fetch("/api/get-weather", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(args),
+      });
+
       if (!res.ok) throw new Error("Failed to fetch weather data");
 
-      const data = await res.json();
+      const data: WeatherApiResponse = await res.json();
+
+      if ("error" in data) {
+        throw new Error(data.error);
+      }
 
       setWeatherData({
-        description: data.weather?.[0]?.description ?? "unknown",
-        icon: data.weather?.[0]?.icon ?? "01d",
-        temp: {
-          current: data.main.temp,
-          min: data.main.temp_min,
-          max: data.main.temp_max,
-        },
+        description: data.description,
+        icon: data.icon,
+        temp: data.temp,
       });
-      setCoords({ lat, lon });
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+      setCoords(data.coordinates);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (coordinates === "current" && !weatherData) {
+    if (weatherData) return; 
+
+    if (Array.isArray(coordinates)) {
+     
+      fetchWeather({ lat: coordinates[0], lon: coordinates[1] });
+    } else if (coordinates === "current") {
+  
       if (!navigator.geolocation) {
-        setError("Geolocation is not supported by your browser.");
+        setError("Geolocation not supported by your browser.");
         return;
       }
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const { latitude, longitude } = pos.coords;
-          fetchWeather(latitude, longitude);
+          fetchWeather({ lat: pos.coords.latitude, lon: pos.coords.longitude });
         },
         (err) => {
           setError(`Location error: ${err.message}`);
@@ -86,11 +99,15 @@ export default function WeatherCard({
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
+    } else if (location) {
+      
+      fetchWeather({ city: location });
     }
-  }, [coordinates, weatherData]);
+  }, [coordinates, location, weatherData]);
 
   const getWeatherIcon = (iconCode?: string) => {
-    if (!iconCode) return <WiDaySunny size={50} className="mx-auto text-yellow-400" />;
+    if (!iconCode)
+      return <WiDaySunny size={50} className="mx-auto text-yellow-400" />;
     if (iconCode.startsWith("01"))
       return <WiDaySunny size={50} className="mx-auto text-yellow-400" />;
     if (["02", "03", "04"].some((c) => iconCode.startsWith(c)))
@@ -99,6 +116,8 @@ export default function WeatherCard({
       return <WiRain size={50} className="mx-auto text-blue-400" />;
     if (iconCode.startsWith("13"))
       return <WiSnow size={50} className="mx-auto text-cyan-300" />;
+    if (iconCode.startsWith("50"))
+      return <WiFog size={50} className="mx-auto text-gray-400" />;
     return <WiDaySunny size={50} className="mx-auto text-yellow-400" />;
   };
 
@@ -114,21 +133,21 @@ export default function WeatherCard({
         {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
         {coords && !loading && !error && (
-          <div className="w-full text-center space-y-2">
-            <p className="text-sm">
-              Latitude: {coords.lat.toFixed(4)}, Longitude: {coords.lon.toFixed(4)}
-            </p>
-          </div>
+          <p className="text-sm text-gray-600">
+            📍 {coords[0].toFixed(2)}, {coords[1].toFixed(2)}
+          </p>
         )}
 
         {weatherData && !loading && (
           <div className="w-full text-center space-y-2">
             {getWeatherIcon(weatherData.icon)}
-            <h3 className="text-xl font-bold capitalize">{weatherData.description}</h3>
+            <h3 className="text-xl font-bold capitalize">
+              {weatherData.description}
+            </h3>
             <div className="space-y-1 text-sm">
-              <p>Current Temp: {weatherData.temp.current.toFixed(1)}°C</p>
-              <p>Min Temp: {weatherData.temp.min.toFixed(1)}°C</p>
-              <p>Max Temp: {weatherData.temp.max.toFixed(1)}°C</p>
+              <p>🌡 {weatherData.temp.current.toFixed(1)}°C</p>
+              <p>⬇ Min: {weatherData.temp.min.toFixed(1)}°C</p>
+              <p>⬆ Max: {weatherData.temp.max.toFixed(1)}°C</p>
             </div>
           </div>
         )}

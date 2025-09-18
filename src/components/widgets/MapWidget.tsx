@@ -24,6 +24,7 @@ export default function MapWidget({ title, data }: MapWidgetProps) {
 
   const createIcon = useMemo(() => {
     if (typeof window === "undefined") return undefined;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const L = require("leaflet");
 
     return (color: string) =>

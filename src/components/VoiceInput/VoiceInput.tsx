@@ -1,150 +1,206 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Mic, X, AudioLines, Pause } from "lucide-react";
+import { createPortal } from "react-dom";
+import { WavyBackground } from "@/components/ui/wavy-background";
 
 type SmartVoiceInputProps = {
-  placeholder?: string;
-  onResult?: (text: string) => void;
-  asButton?: boolean; // 🔹 if true, render only mic button
+	placeholder?: string;
+	value?: string;
+	onChange?: (val: string) => void;
+	onResult?: (text: string) => void;
+	asButton?: boolean;
+	inactivityDelay?: number;
 };
 
 export default function SmartVoiceInput({
-  placeholder,
-  onResult,
-  asButton = false,
+	placeholder,
+	value,
+	onChange,
+	onResult,
+	asButton = false,
+	inactivityDelay = 4000,
 }: SmartVoiceInputProps) {
-  const [recording, setRecording] = useState(false);
-  const [text, setText] = useState("");
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationIdRef = useRef<number | null>(null);
+	const [recording, setRecording] = useState(false);
+	const [listening, setListening] = useState(false);
+	const [mounted, setMounted] = useState(false);
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+	const recognitionRef = useRef<SpeechRecognition | null>(null);
+	const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-      // Setup audio context
-      audioCtxRef.current = new AudioContext();
-      const source = audioCtxRef.current.createMediaStreamSource(stream);
-      analyserRef.current = audioCtxRef.current.createAnalyser();
-      analyserRef.current.fftSize = 128;
-      source.connect(analyserRef.current);
+	useEffect(() => {
+		setMounted(true);
+		return () => {
+			if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+			recognitionRef.current?.stop();
+		};
+	}, []);
 
-      // SpeechRecognition setup
-      const SpeechRecognition =
-        window.SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert("Speech recognition not supported in this browser.");
-        return;
-      }
+	const initRecognition = () => {
+		const SpeechRecognition =
+			window.SpeechRecognition || window.webkitSpeechRecognition;
+		if (!SpeechRecognition) {
+			alert("Speech recognition not supported in this browser.");
+			return null;
+		}
 
-      const recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
+		const recognition = new SpeechRecognition();
+		recognition.lang = "en-US";
+		recognition.interimResults = true;
+		recognition.continuous = true;
 
-      recognition.onresult = (e: SpeechRecognitionEvent) => {
-        const transcript = e.results[0][0].transcript;
-        setText(transcript);
-        onResult?.(transcript);
-      };
+		recognition.onstart = () => {
+			setListening(true);
+		};
 
-      recognition.onend = () => stopRecording();
+		recognition.onresult = (e: SpeechRecognitionEvent) => {
+			const liveTranscript = Array.from(e.results)
+				.map((r) => r[0].transcript)
+				.join(" ");
 
-      recognition.start();
-      recognitionRef.current = recognition;
+			onChange?.(liveTranscript);
+			resetInactivityTimer(liveTranscript);
 
-      setRecording(true);
-    } catch (err) {
-      console.error("Mic error:", err);
-    }
-  };
+			if (e.results[e.results.length - 1].isFinal) {
+				onResult?.(liveTranscript.trim());
+			}
+		};
 
-  const stopRecording = () => {
-    setRecording(false);
-    recognitionRef.current?.stop();
-    audioCtxRef.current?.close();
-    if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
-  };
+		recognition.onend = () => {
+			if (recording) setListening(false);
+		};
 
-  // 🔥 Effect runs after canvas is mounted when recording=true
-  useEffect(() => {
-    if (recording && canvasRef.current && analyserRef.current) {
-      const ctx = canvasRef.current.getContext("2d")!;
-      const bufferLength = analyserRef.current.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
+		return recognition;
+	};
 
-      const render = () => {
-        animationIdRef.current = requestAnimationFrame(render);
+	const startRecording = () => {
+		if (recording) return;
+		const recognition = initRecognition();
+		if (!recognition) return;
 
-        analyserRef.current!.getByteFrequencyData(dataArray);
+		recognition.start();
+		recognitionRef.current = recognition;
 
-        ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
+		setRecording(true);
+		onChange?.("");
+		resetInactivityTimer();
+	};
 
-        const barWidth = (canvasRef.current!.width / bufferLength) * 1.5;
-        let x = 0;
+	const stopRecording = (auto: boolean = false) => {
+		recognitionRef.current?.stop();
+		recognitionRef.current = null;
+		setRecording(false);
+		setListening(false);
 
-        for (let i = 0; i < bufferLength; i++) {
-          const barHeight = dataArray[i] / 2;
-          ctx.fillStyle = "#4f46e5";
-          ctx.fillRect(
-            x,
-            canvasRef.current!.height - barHeight,
-            barWidth,
-            barHeight
-          );
-          x += barWidth + 1;
-        }
-      };
+		if (!auto && value?.trim()) {
+			onResult?.(value.trim());
+		}
+	};
 
-      render();
-    }
+	const toggleListening = () => {
+		if (listening) {
+			recognitionRef.current?.stop();
+			setListening(false);
+			if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+		} else {
+			const recognition = initRecognition();
+			if (!recognition) return;
 
-    return () => {
-      if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
-    };
-  }, [recording]);
+			recognition.start();
+			recognitionRef.current = recognition;
+			resetInactivityTimer();
+		}
+	};
 
-  // 🔹 Mic button UI
-  const micButton = (
-    <button
-      type="button"
-      onClick={recording ? stopRecording : startRecording}
-      className="ml-2 p-1 rounded-full bg-muted hover:bg-muted/80"
-    >
-      {recording ? (
-        <MicOff size={18} className="text-red-500" />
-      ) : (
-        <Mic size={18} />
-      )}
-    </button>
-  );
+	const resetInactivityTimer = (text?: string) => {
+		if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+		inactivityTimerRef.current = setTimeout(() => {
+			if (text && text.trim()) stopRecording(false);
+			else stopRecording(true);
+		}, inactivityDelay);
+	};
 
-  if (asButton) {
-    // 🎤 Mic only mode
-    return micButton;
-  }
+	const micButton = (
+		<button
+			type="button"
+			onClick={recording ? () => stopRecording(false) : startRecording}
+			className="ml-2 p-2 rounded-full bg-muted hover:bg-muted/80"
+		>
+			<Mic size={18} className={recording ? "text-red-500" : ""} />
+		</button>
+	);
 
-  // 📝 Full input + mic mode
-  return (
-    <div className="flex items-center justify-between border border-border rounded px-2 py-1 w-72 bg-card text-card-foreground">
-      <div className="">
-        {!recording ? (
-          <input
-            type="text"
-            className="flex-1 bg-transparent outline-none"
-            placeholder={placeholder}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
-        ) : (
-          <canvas ref={canvasRef} width={200} height={20} />
-        )}
-      </div>
-      {micButton}
-    </div>
-  );
+	return (
+		<>
+			{!asButton ? (
+				<div className="flex items-center border border-border rounded px-2 py-1 w-72 bg-card text-card-foreground">
+					<input
+						type="text"
+						className="flex-1 bg-transparent outline-none"
+						placeholder={placeholder}
+						value={value ?? ""}
+						onChange={(e) => onChange?.(e.target.value)}
+					/>
+					{micButton}
+				</div>
+			) : (
+				micButton
+			)}
+
+			{mounted &&
+				recording &&
+				createPortal(
+					<div className="fixed inset-0 z-[9999] flex flex-col items-center justify-between">
+						<WavyBackground
+							className="w-full h-full"
+							containerClassName="absolute inset-0"
+							backgroundFill="black"
+							blur={15}
+							waveOpacity={0.6}
+							speed="fast"
+						/>
+						<div className="absolute inset-0 bg-black/10 z-10" />
+
+						<div className="relative z-20 flex items-center justify-center mt-32">
+							<div className="flex items-center gap-3 bg-white/10 rounded-xl px-6 py-4 text-white text-lg border border-white/20 backdrop-blur-md shadow-lg">
+								{listening ? (
+									<AudioLines
+										className="text-blue-400 animate-pulse"
+										size={28}
+									/>
+								) : (
+									<Pause className="text-gray-400" size={28} />
+								)}
+								<span>{value || (listening ? "Speak now..." : "Paused")}</span>
+							</div>
+						</div>
+
+						<div className="relative z-20 mb-12 flex items-center gap-12">
+							<button
+								onClick={toggleListening}
+								className={`flex items-center justify-center w-20 h-20 rounded-full shadow-lg transition relative ${
+									listening
+										? "bg-gradient-to-r from-blue-400 to-blue-600 animate-pulse ring-4 ring-blue-500/40"
+										: "bg-gray-600"
+								}`}
+							>
+								<Mic size={38} className="text-white" />
+								{listening && (
+									<span className="absolute inset-0 rounded-full animate-ping bg-blue-500/30" />
+								)}
+							</button>
+
+							<button
+								onClick={() => stopRecording(false)}
+								className="flex items-center justify-center w-20 h-20 rounded-full bg-red-600 hover:bg-red-700 shadow-lg ring-4 ring-red-500/30"
+							>
+								<X size={36} className="text-white" />
+							</button>
+						</div>
+					</div>,
+					document.body
+				)}
+		</>
+	);
 }

@@ -1,8 +1,24 @@
-export type WidgetType = "line" | "bar" | "pie" | "image" | "video" | "map" | "weather";
+export type WidgetType =
+  | "line"
+  | "bar"
+  | "pie"
+  | "image"
+  | "video"
+  | "map"
+  | "weather"
+  | "document";
 
 export type ChartData = { label: string; value: number };
-export type MapData = { name: string; coordinates: [number, number]; color?: string };
+
+export type MapData = {
+  name: string;
+  coordinates: [number, number];
+  color?: string;
+};
+
 export type WeatherTemp = { current: number; min: number; max: number };
+
+export type DocumentPreviewRow = Record<string, string | number | null>;
 
 export type Widget = {
   id: string;
@@ -28,5 +44,11 @@ export type Widget = {
     description?: string;
     icon?: string;
     temp?: WeatherTemp;
+
+    // document-specific
+    filename?: string;
+    fields?: string[];
+    rowCount?: number;
+    preview?: DocumentPreviewRow[];
   };
 };

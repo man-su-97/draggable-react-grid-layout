@@ -28,7 +28,12 @@ export default function ImageWidget({ src, title }: ImageWidgetProps) {
 					className="w-full h-full object-cover rounded-md"
 					width={800}
 					height={600}
-					onLoadingComplete={() => setLoading(false)}
+					priority
+					onLoad={(e) => {
+						if (e.currentTarget.complete) {
+							setLoading(false);
+						}
+					}}
 				/>
 			</div>
 		</div>
