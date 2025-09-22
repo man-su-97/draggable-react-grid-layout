@@ -1,3 +1,12 @@
+// Lets you speak commands instead of typing.
+
+// Uses the browser’s SpeechRecognition.
+
+// Streams transcript → Dashboard as command.
+
+// When silence or button press ends recording, it triggers runAICommand().
+
+
 "use client";
 
 import { useRef, useState, useEffect } from "react";

@@ -1,3 +1,8 @@
+// The switchboard. It looks at widget.type and decides which widget component to render (LineChartWidget, WeatherWidget, etc.).
+
+// Passes payload (data, src, coordinates, etc.) into the correct widget.
+
+
 "use client";
 
 import { WidgetType, ChartData, MapData, WeatherTemp } from "@/types/types";

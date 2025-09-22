@@ -1,3 +1,6 @@
+// Takes user prompt → sends to Gemini AI → AI decides widget type + fills payload (title, data, etc.).
+
+
 import type { NextApiRequest, NextApiResponse } from "next";
 import {
 	GoogleGenerativeAI,

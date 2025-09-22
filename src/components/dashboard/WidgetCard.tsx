@@ -1,3 +1,10 @@
+
+// A UI wrapper around a widget.
+
+// Renders a draggable/resizable card with header (title + remove button).
+
+// Content is rendered by WidgetRenderer.
+
 "use client";
 
 import { Card } from "@/components/ui/card";

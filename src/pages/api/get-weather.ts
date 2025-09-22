@@ -1,3 +1,6 @@
+// Talks to external weather API, returns {description, icon, temp, coordinates}.
+
+
 import type { NextApiRequest, NextApiResponse } from "next";
 
 const WEATHER_API_KEY = process.env.WEATHER_API_KEY!; 

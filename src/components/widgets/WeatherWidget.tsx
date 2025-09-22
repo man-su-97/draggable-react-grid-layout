@@ -1,3 +1,16 @@
+// A smart widget that fetches live weather data.
+
+// If payload already has temp/description/icon, it hydrates from props.
+
+// Otherwise, it:
+
+// Calls /api/get-weather (lat/lon/city).
+
+// Or uses geolocation if coordinates: "current".
+
+// Displays weather card with icons and temps.
+
+
 "use client";
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
