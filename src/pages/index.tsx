@@ -18,7 +18,6 @@ export default function Home() {
 			{/* <NavBar /> */}
 			<Dashboard />
 			{/* <LandingSection /> */}
-			 <PdfInsightTester />
 		</div>
 	);
 }

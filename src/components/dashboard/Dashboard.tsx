@@ -1,11 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import GridLayout, { Layout } from "react-grid-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import WidgetCard from "./WidgetCard";
-import { Widget, WidgetType } from "@/types/types";
+import { Widget, WidgetType, ChartData } from "@/types/types";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
+import { Loader2, Paperclip } from "lucide-react";
+import SmartVoiceInput from "../VoiceInput/VoiceInput";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -13,23 +17,38 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
-import { Loader2 } from "lucide-react";
-import SmartVoiceInput from "../VoiceInput/VoiceInput";
-
 const STORAGE_KEY = "dashboard-widgets";
 
 const DEFAULT_WIDGETS: Widget[] = [
   {
     id: "1",
     type: "line",
-    layout: { i: "1", x: 0, y: 0, w: 6, h: 4, minW: 2, minH: 2 },
+    layout: { i: "1", x: 0, y: 0, w: 6, h: 4 },
+    payload: {
+      title: "Revenue vs Sales",
+      data: [
+        { label: "Jan", value: 100 },
+        { label: "Feb", value: 200 },
+        { label: "Mar", value: 300 },
+      ],
+      source: "gemini",
+      loading: false,
+    },
   },
   {
     id: "2",
     type: "bar",
-    layout: { i: "2", x: 6, y: 0, w: 6, h: 4, minW: 2, minH: 2 },
+    layout: { i: "2", x: 6, y: 0, w: 6, h: 4 },
+    payload: {
+      title: "Expenses",
+      data: [
+        { label: "Q1", value: 500 },
+        { label: "Q2", value: 300 },
+        { label: "Q3", value: 400 },
+      ],
+      source: "gemini",
+      loading: false,
+    },
   },
 ];
 
@@ -37,11 +56,14 @@ export default function Dashboard() {
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [command, setCommand] = useState("");
   const [loading, setLoading] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Load widgets from localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
     const raw = localStorage.getItem(STORAGE_KEY);
-
     if (raw) {
       try {
         const parsedWidgets: Widget[] = JSON.parse(raw);
@@ -49,7 +71,6 @@ export default function Dashboard() {
           setWidgets(parsedWidgets);
           return;
         }
-        setWidgets(parsedWidgets);
       } catch {
         console.log("Resetting to defaults");
       }
@@ -58,9 +79,12 @@ export default function Dashboard() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_WIDGETS));
   }, []);
 
+  // Persist widgets
   useEffect(() => {
     if (typeof window === "undefined") return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets));
+    if (widgets.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets));
+    }
   }, [widgets]);
 
   const resetDashboard = () => {
@@ -68,39 +92,54 @@ export default function Dashboard() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_WIDGETS));
   };
 
-  async function runAICommand(text: string) {
-    if (!text.trim()) return;
+  async function runAICommand() {
+    if (!command.trim() && !attachedFile) return;
     setLoading(true);
+
     try {
+      let base64File: string | undefined;
+      let mimeType: string | undefined;
+      let fileName: string | undefined;
+
+      if (attachedFile) {
+        const buff = await attachedFile.arrayBuffer();
+        base64File = Buffer.from(buff).toString("base64");
+        mimeType = attachedFile.type;
+        fileName = attachedFile.name;
+      }
+
       const serverResponse = await fetch("/api/generate-widget", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text: command,
+          base64File,
+          mimeType,
+          fileName,
+        }),
       });
 
       const responseJson = await serverResponse.json();
 
-      if (responseJson?.type) {
-        addWidget(responseJson.type as WidgetType, {
-          title: responseJson.title,
-          data: responseJson.data,
-          src: responseJson.src,
-          location: responseJson.location,
-          coordinates: responseJson.coordinates,
-          description: responseJson.description,
-          icon: responseJson.icon,
-          temp: responseJson.temp,
-
-          filename: responseJson.filename,
-          fields: responseJson.fields,
-          rowCount: responseJson.rowCount,
-          preview: responseJson.preview,
+      if (Array.isArray(responseJson)) {
+        const id = crypto.randomUUID();
+        const type = responseJson[0].type as WidgetType;
+        addWidget(type, {
+          ...responseJson[0],
+          compare: true,
+          compareData: [
+            { source: "document", data: responseJson[0].data as ChartData[] },
+            { source: "gemini", data: responseJson[1].data as ChartData[] },
+          ],
         });
-
-        setCommand("");
+      } else if (responseJson?.type) {
+        addWidget(responseJson.type as WidgetType, responseJson);
       } else {
         alert("AI could not understand your prompt!");
       }
+
+      setCommand("");
+      setAttachedFile(null);
     } catch (err) {
       console.error("AI command error", err);
       alert("Something went wrong with AI command.");
@@ -109,35 +148,46 @@ export default function Dashboard() {
     }
   }
 
-  const addWidget = (type: WidgetType, payload?: any) => {
+  const addWidget = (
+    type: WidgetType,
+    payload?: Partial<Widget["payload"]>
+  ): string => {
     const id = crypto.randomUUID();
-    const cols = 12;
-    const w = 4;
-    const h = 4;
-    const itemsPerRow = Math.floor(cols / w);
-    const index = widgets.length;
 
-    const row = Math.floor(index / itemsPerRow);
-    const col = index % itemsPerRow;
-
-    const newLayoutEntry: Layout = {
-      i: id,
-      x: col * w,
-      y: row * h,
-      w,
-      h,
-      minW: type === "weather" ? 6 : 3,
-      minH: 3,
-    };
+    const safePayload: any = (() => {
+      switch (type) {
+        case "line":
+        case "bar":
+        case "pie":
+          return {
+            title: `${type.toUpperCase()} Chart`,
+            data: [],
+            source: "gemini",
+            ...payload,
+          };
+        case "map":
+          return { title: "Map Widget", data: [], ...payload };
+        case "image":
+        case "video":
+          return { src: "", title: `${type} widget`, ...payload };
+        case "weather":
+          return { coordinates: "current", ...payload };
+        case "document":
+          return { filename: "Unknown", ...payload };
+        default:
+          return { ...payload };
+      }
+    })();
 
     const newWidget: Widget = {
       id,
       type,
-      layout: newLayoutEntry,
-      payload,
+      layout: { i: id, x: 0, y: Infinity, w: 6, h: 4 },
+      payload: safePayload,
     };
 
-    setWidgets((prevWidgets) => [...prevWidgets, newWidget]);
+    setWidgets((prev) => [...prev, newWidget]);
+    return id;
   };
 
   const removeWidget = (id: string) => {
@@ -163,13 +213,43 @@ export default function Dashboard() {
         <h2 className="text-2xl font-bold tracking-tight">AI Dashboard</h2>
 
         <div className="flex gap-2 ml-auto items-center">
-          <Input
-            type="text"
-            placeholder="Ask AI to add a widget..."
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            className="w-64"
-          />
+          {/* Input with file attach */}
+          <div className="flex items-center border rounded-md overflow-hidden">
+            <Input
+              type="text"
+              placeholder={
+                attachedFile
+                  ? `Ask about ${attachedFile.name}...`
+                  : "Ask AI to add a widget..."
+              }
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              className="w-72 border-none focus:ring-0"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              className="no-drag"
+            >
+              <Paperclip className="w-4 h-4" />
+            </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setAttachedFile(file);
+              }}
+            />
+          </div>
+
+          {attachedFile && (
+            <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+              📎 {attachedFile.name}
+            </span>
+          )}
 
           <SmartVoiceInput
             asButton
@@ -177,12 +257,12 @@ export default function Dashboard() {
             onChange={(val) => setCommand(val)}
             onResult={(text) => {
               setCommand(text);
-              runAICommand(text);
+              runAICommand();
             }}
           />
 
           <Button
-            onClick={() => runAICommand(command)}
+            onClick={runAICommand}
             disabled={loading}
             className="bg-primary text-primary-foreground hover:bg-blue-600 flex items-center gap-2"
           >
@@ -196,6 +276,7 @@ export default function Dashboard() {
             )}
           </Button>
 
+          {/* Dropdown to add demo widgets */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="bg-muted text-muted-foreground hover:bg-muted/80">
@@ -215,16 +296,14 @@ export default function Dashboard() {
               <DropdownMenuItem onClick={() => addWidget("map")}>
                 Map Widget
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => addWidget("weather", { coordinates: "current" })}
-              >
-                Weather Widget
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => addWidget("image")}>
                 Image Widget
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => addWidget("video")}>
                 Video Widget
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addWidget("weather")}>
+                Weather Widget
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => addWidget("document")}>
                 Document Widget
@@ -234,10 +313,10 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Widgets area */}
       <div className="flex-1">
         <GridLayout
           className="layout"
-          layout={widgets.map((widget) => widget.layout)}
           cols={24}
           rowHeight={100}
           width={1900}
