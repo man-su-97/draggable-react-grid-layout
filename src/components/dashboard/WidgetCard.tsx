@@ -16,32 +16,54 @@ export default function WidgetCard({ widget, onRemove }: WidgetCardProps) {
 		widget.type === "weather" ? "min-w-[368px]" : "min-w-[250px]";
 
 	let baseTitle: string;
-	if (!widget.payload) {
-		baseTitle = `${widget.type} widget`; // fallback if payload missing
-	} else {
-		switch (widget.type) {
-			case "line":
-			case "bar":
-			case "pie":
-				baseTitle = widget.payload.title ?? `${widget.type} widget`;
-				break;
-			case "map":
-				baseTitle = widget.payload.title ?? "Map Widget";
-				break;
-			case "image":
-			case "video":
-				baseTitle = widget.payload.title ?? `${widget.type} widget`;
-				break;
-			case "weather":
-				baseTitle = widget.payload.location ?? "Weather Widget";
-				break;
-			case "document":
-				baseTitle = widget.payload.filename ?? "Document";
-				break;
-			default:
-				baseTitle = `${widget.type} widget`;
-		}
+
+	switch (widget.type) {
+		case "line":
+		case "bar":
+		case "pie":
+			baseTitle = widget.payload.title ?? `${widget.type} widget`;
+			break;
+		case "map":
+			baseTitle = widget.payload.title ?? "Map Widget";
+			break;
+		case "image":
+		case "video":
+			baseTitle = widget.payload.title ?? `${widget.type} widget`;
+			break;
+		case "weather":
+			baseTitle = widget.payload.location ?? "Weather Widget";
+			break;
+		case "document":
+			baseTitle = widget.payload.filename ?? "Document";
+			break;
 	}
+
+	// if (!widget.payload) {
+	// 	baseTitle = `${widget.type} widget`; // fallback if payload missing
+	// } else {
+	// 	switch (widget.type) {
+	// 		case "line":
+	// 		case "bar":
+	// 		case "pie":
+	// 			baseTitle = widget.payload.title ?? `${widget.type} widget`;
+	// 			break;
+	// 		case "map":
+	// 			baseTitle = widget.payload.title ?? "Map Widget";
+	// 			break;
+	// 		case "image":
+	// 		case "video":
+	// 			baseTitle = widget.payload.title ?? `${widget.type} widget`;
+	// 			break;
+	// 		case "weather":
+	// 			baseTitle = widget.payload.location ?? "Weather Widget";
+	// 			break;
+	// 		case "document":
+	// 			baseTitle = widget.payload.filename ?? "Document";
+	// 			break;
+	// 		default:
+	// 			baseTitle = `${widget.type} widget`;
+	// 	}
+	// }
 
 	const title =
 		(widget.type === "line" ||

@@ -1,4 +1,3 @@
-// pages/api/generate-widget.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import {
   GoogleGenerativeAI,
@@ -7,6 +6,7 @@ import {
   GenerateContentResult,
   FunctionCall,
   FunctionDeclaration,
+  FunctionDeclarationSchema,
 } from "@google/generative-ai";
 import { getPrompt } from "@/lib/userPrompt";
 import { xlsxToStructured, csvToStructured } from "@/lib/docParser";
@@ -50,7 +50,7 @@ type WidgetResponse =
   | { type: "document"; filename: string; fields: string[]; rowCount: number; preview: Record<string, string | number | null>[]; summary?: string }
   | { error: string };
 
-// ✅ All functions Gemini can call
+//All functions Gemini can call
 const widgetFunctions: FunctionDeclaration[] = [
   {
     name: "get_weather",
@@ -130,7 +130,7 @@ const widgetFunctions: FunctionDeclaration[] = [
 ];
 
 // Reusable chart parameter schema
-function chartParams(): any {
+function chartParams():FunctionDeclarationSchema {
   return {
     type: SchemaType.OBJECT,
     properties: {
@@ -210,12 +210,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       userPrompt += `\n\nNote: User has uploaded these documents: ${docs.join(", ")}. Use source='document' with filename if the question relates to them.`;
     }
 
-    // Call Gemini with function declarations
+    // initializes the Gemini model with a specific model .
+    // This is what enables the function calling feature.
     const model: GenerativeModel = ai.getGenerativeModel({
       model: "gemini-2.5-flash",
       tools: [{ functionDeclarations: widgetFunctions }],
     });
 
+    //This sends the user's prompt to Gemini.
     const response: GenerateContentResult = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: userPrompt }] }],
     });
@@ -223,7 +225,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const fnCalls: FunctionCall[] = response.response.functionCalls?.() ?? [];
     const fnCall = fnCalls[0];
     if (!fnCall) return res.status(400).json({ error: "No function call from Gemini" });
-
+    console.log("Response from gemini function call -",fnCall);
     // -------------------------------
     // Handle function calls
     // -------------------------------

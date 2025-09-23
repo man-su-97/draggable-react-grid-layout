@@ -28,7 +28,6 @@ export type WidgetLayout = {
   minH?: number;
 };
 
-/** 🔹 Shared chart payload with compare support */
 export type ChartPayload = {
   title: string;
   data: ChartData[];
@@ -38,7 +37,6 @@ export type ChartPayload = {
   compareData?: CompareEntry[];
 };
 
-/** 🔹 Chart widgets (line, bar, pie) */
 export type ChartWidget = {
   id: string;
   type: "line" | "bar" | "pie";
@@ -46,7 +44,6 @@ export type ChartWidget = {
   payload: ChartPayload;
 };
 
-/** 🔹 Image widget */
 export type ImageWidget = {
   id: string;
   type: "image";
@@ -58,7 +55,6 @@ export type ImageWidget = {
   };
 };
 
-/** 🔹 Video widget */
 export type VideoWidget = {
   id: string;
   type: "video";
@@ -70,7 +66,6 @@ export type VideoWidget = {
   };
 };
 
-/** 🔹 Map widget */
 export type MapWidget = {
   id: string;
   type: "map";
@@ -82,7 +77,6 @@ export type MapWidget = {
   };
 };
 
-/** 🔹 Weather widget */
 export type WeatherWidget = {
   id: string;
   type: "weather";
@@ -97,7 +91,6 @@ export type WeatherWidget = {
   };
 };
 
-/** 🔹 Document widget */
 export type DocumentWidget = {
   id: string;
   type: "document";
@@ -112,7 +105,6 @@ export type DocumentWidget = {
   };
 };
 
-/** 🔹 Single union type for all widgets */
 export type Widget =
   | ChartWidget
   | ImageWidget
