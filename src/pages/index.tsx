@@ -1,5 +1,4 @@
 import Dashboard from "@/components/dashboard/Dashboard";
-import PdfInsightTester from "@/components/dashboard/PdfInsightTester";
 import { Geist, Geist_Mono } from "next/font/google";
 
 const geistSans = Geist({

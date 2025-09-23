@@ -11,7 +11,6 @@ import WeatherWidget from "../widgets/WeatherWidget";
 import DocumentWidget from "../widgets/DocumentWidget";
 
 export default function WidgetRenderer({ widget }: { widget: Widget }) {
-	// 🔹 Compare mode: only valid for chart widgets
 	if (
 		(widget.type === "line" ||
 			widget.type === "bar" ||
@@ -35,7 +34,7 @@ export default function WidgetRenderer({ widget }: { widget: Widget }) {
 							...widget,
 							payload: {
 								...widget.payload,
-								data: entry.data, // override data for this view
+								data: entry.data, 
 							},
 						})}
 					</div>
@@ -44,11 +43,9 @@ export default function WidgetRenderer({ widget }: { widget: Widget }) {
 		);
 	}
 
-	// 🔹 Normal single widget
 	return <div className="w-full h-full">{renderSingleWidget(widget)}</div>;
 }
 
-// 🔹 Helper: render one widget by type
 function renderSingleWidget(widget: Widget) {
 	switch (widget.type) {
 		case "line":
@@ -113,7 +110,6 @@ function renderSingleWidget(widget: Widget) {
 			);
 
 		default:
-			// Exhaustive check: will error if a new widget type is added and not handled
 			const _exhaustive: never = widget;
 			return <div className="p-4 text-red-400">Unknown Widget</div>;
 	}
