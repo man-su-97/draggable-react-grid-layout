@@ -1,0 +1,35 @@
+services:
+  mediamtx:
+    build:
+      context: ./stream
+      dockerfile: Dockerfile
+    container_name: streaming
+    ports:
+      - "8888:8888"
+      - "8889:8889"
+      - "8189:8189/udp"
+      - "8554:8554"
+      - "9997:9997"
+    restart: always
+
+  nextjs:
+    build:
+      context: ./next-dashboard-app
+      dockerfile: Dockerfile
+    container_name: nextjs_app
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./next-dashboard-app/.env
+    environment:
+      # internal (for Next.js backend → MediaMTX)
+      MEDIAMTX_CONTROL_BASE: http://mediamtx:9997
+
+      # public (for browser → HLS/WebRTC)
+      MEDIAMTX_HLS_BASE: http://localhost:8888
+      MEDIAMTX_WEBRTC_BASE: http://localhost:8889
+      MEDIAMTX_USER: admin
+      MEDIAMTX_PASS: admin
+    depends_on:
+      - mediamtx
+    restart: always
