@@ -4,9 +4,7 @@ const COLS = 24;
 const DEFAULT_W = 6;
 const DEFAULT_H = 4;
 
-/**
- * Computes the next horizontal layout position for a new widget
- */
+
 export function nextLayout(
   widgets: Widget[],
   opts?: Partial<WidgetLayout>

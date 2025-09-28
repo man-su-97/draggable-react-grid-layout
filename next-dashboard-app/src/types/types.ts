@@ -10,10 +10,10 @@ export type WidgetType =
 	| "weather"
 	| "document"
 	| "camera"
+	| "chat"
 	| "error";
 
-
-	export type WidgetLayout = Layout & {
+export type WidgetLayout = Layout & {
 	i: string;
 	x: number;
 	y: number;
@@ -36,8 +36,6 @@ export type CompareEntry = {
 	source: "document" | "gemini";
 	data: ChartData[];
 };
-
-
 
 export type ChartPayload = {
 	title: string;
@@ -135,6 +133,15 @@ export type ErrorWidget = {
 	};
 };
 
+export type ChatWidget = {
+	id: string;
+	type: "chat";
+	layout: WidgetLayout;
+	payload: {
+		reply: string;
+	};
+};
+
 export type Widget =
 	| ChartWidget
 	| ImageWidget
@@ -143,6 +150,7 @@ export type Widget =
 	| WeatherWidget
 	| DocumentWidget
 	| CameraWidget
-	| ErrorWidget;
+	| ErrorWidget
+	| ChatWidget;
 
 export type WidgetResponse = Widget;

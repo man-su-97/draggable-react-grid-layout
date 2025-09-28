@@ -1,9 +1,14 @@
-import { Widget } from "@/types/types";
+import { Widget, WidgetLayout } from "@/types/types";
 import { nextLayout } from "@/lib/layoutUtils";
 
-export function buildDemoWidget(type: Widget["type"], widgets: Widget[]): Widget {
+export function buildDemoWidget(
+  type: Widget["type"],
+  widgets: Widget[],
+  layoutOverride?: Partial<WidgetLayout>
+): Widget {
   const id = crypto.randomUUID();
-  const layout = nextLayout(widgets);
+  // Always compute placement relative to existing widgets
+  const layout = { ...nextLayout(widgets), i: id, ...layoutOverride };
 
   switch (type) {
     case "line":

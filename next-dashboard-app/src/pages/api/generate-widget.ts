@@ -670,6 +670,8 @@ import { getPrompt } from "@/lib/userPrompt";
 import { xlsxToStructured, csvToStructured } from "@/lib/docParser";
 import { Buffer } from "buffer";
 import { ChartData, DocumentPreviewRow, MapData } from "@/types/types";
+import { ChatMessage, ConversationId, getHistory } from "@/lib/chatHistory";
+import { error } from "console";
 
 const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -764,6 +766,13 @@ type WidgetResponse =
 			payload: {
 				streamUrl: string;
 				title: string;
+			};
+	  }
+	| {
+			id: string;
+			type: "chat";
+			payload: {
+				reply: string | undefined;
 			};
 	  }
 	| { error: string };
@@ -916,21 +925,38 @@ function aggregateDocData(
 	});
 }
 
-
 export default async function handler(
 	req: NextApiRequest,
-	res: NextApiResponse<WidgetResponse | WidgetResponse[]>
+	res: NextApiResponse<WidgetResponse | WidgetResponse[] | {history: ChatMessage[]}>
 ) {
+	if (req.method === "GET") {
+		const conversationsId = req.query.conversationId as ConversationId;
+
+		if (!conversationsId) {
+			return res.status(400).json({
+				error: "Missing conversationId",
+			});
+		}
+		return res.status(200).json({
+			history: getHistory(conversationsId),
+		});
+	}
+
 	if (req.method !== "POST")
 		return res.status(405).json({ error: "Method not allowed" });
 
 	try {
-		const { text, base64File, fileName, mimeType } = req.body as {
+		const { text, base64File, fileName, mimeType, conversationId } = req.body as {
 			text: string;
 			base64File?: string;
 			fileName?: string;
 			mimeType?: string;
+			conversationId: ConversationId;
 		};
+
+		if (!conversationId) {
+			return res.status(400).json({ error: "conversationId is required" });
+		}
 
 		// --- handle uploaded docs ---
 		if (base64File && fileName && mimeType) {
@@ -958,15 +984,30 @@ export default async function handler(
 			tools: [{ functionDeclarations: widgetFunctions }],
 		});
 
+		// include chat history
+		const history = getHistory(conversationId);
 		const response: GenerateContentResult = await model.generateContent({
-			contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+			contents: [...history, { role: "user", parts: [{ text: userPrompt }] }],
 		});
+
+		// const response: GenerateContentResult = await model.generateContent({
+		// 	contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+		// });
 
 		const fnCalls: FunctionCall[] = response.response.functionCalls?.() ?? [];
 		const fnCall = fnCalls[0];
-		if (!fnCall)
-			return res.status(400).json({ error: "No function call from Gemini" });
-		console.log("Response from gemini function call -", fnCall);
+
+		if (!fnCall) {
+			return res.status(200).json({
+				id: makeId("chat"),
+				type: "chat",
+				payload: { reply: response.response.text?.() },
+			});
+		}
+
+		// if (!fnCall)
+		// 	return res.status(400).json({ error: "No function call from Gemini" });
+		// console.log("Response from gemini function call -", fnCall);
 
 		// -------------------------------
 		// Handle function calls
