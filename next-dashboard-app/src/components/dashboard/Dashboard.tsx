@@ -30,7 +30,6 @@ interface ChatMessage {
 
 const STORAGE_KEY = "dashboard-widgets";
 
-
 function useContainerWidth() {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -47,7 +46,6 @@ function useContainerWidth() {
   return { ref, width };
 }
 
-
 export default function Dashboard() {
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [command, setCommand] = useState("");
@@ -61,8 +59,6 @@ export default function Dashboard() {
   const [conversationId] = useState<string>(() => crypto.randomUUID());
 
   const { ref: gridRef, width: gridWidth } = useContainerWidth();
-
-
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -92,14 +88,15 @@ export default function Dashboard() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
   };
 
-  
   // Chat history sync
-  
+
   useEffect(() => {
     if (!chatOpen) return;
     (async () => {
       try {
-        const res = await fetch(`/api/generate-widget?conversationId=${conversationId}`);
+        const res = await fetch(
+          `/api/chat?conversationId=${conversationId}`
+        );
         if (!res.ok) return;
         const data = await res.json();
 
@@ -128,8 +125,6 @@ export default function Dashboard() {
     })();
   }, [chatOpen, conversationId]);
 
- 
-
   // AI Command Handler
 
   async function runAICommand() {
@@ -137,7 +132,10 @@ export default function Dashboard() {
     setLoading(true);
 
     const now = Date.now();
-    setChat((prev) => [...prev, { role: "user", text: command, timestamp: now }]);
+    setChat((prev) => [
+      ...prev,
+      { role: "user", text: command, timestamp: now },
+    ]);
 
     try {
       let base64File: string | undefined;
@@ -151,7 +149,19 @@ export default function Dashboard() {
         fileName = attachedFile.name;
       }
 
-      const res = await fetch("/api/generate-widget", {
+      // const res = await fetch("/api/generate-widget", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     text: command,
+      //     base64File,
+      //     mimeType,
+      //     fileName,
+      //     conversationId,
+      //   }),
+      // });
+
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -187,7 +197,10 @@ export default function Dashboard() {
     if (resp.type === "chat") {
       const now = Date.now();
       const reply = resp.payload.reply ?? "I didn’t quite get that.";
-      setChat((prev) => [...prev, { role: "model", text: reply, timestamp: now }]);
+      setChat((prev) => [
+        ...prev,
+        { role: "model", text: reply, timestamp: now },
+      ]);
     }
     // any actual widget → add to grid
     else if ("type" in resp) {
@@ -197,12 +210,14 @@ export default function Dashboard() {
     else {
       setChat((prev) => [
         ...prev,
-        { role: "model", text: "I didn’t quite get that.", timestamp: Date.now() },
+        {
+          role: "model",
+          text: "I didn’t quite get that.",
+          timestamp: Date.now(),
+        },
       ]);
     }
   }
-
-  
 
   function addWidget(widget: Widget) {
     if (widget.type === "chat") return;
@@ -228,8 +243,6 @@ export default function Dashboard() {
     );
   };
 
-
-  
   return (
     <div className="flex flex-col min-h-[calc(100vh-80px)] bg-background text-foreground">
       {/* Top Bar */}
@@ -395,7 +408,6 @@ export default function Dashboard() {
   );
 }
 
-
 // "use client";
 
 // import React, { useEffect, useRef, useState } from "react";
@@ -417,7 +429,6 @@ export default function Dashboard() {
 // import { buildDemoWidget } from "@/components/dashboard/DemoWidget";
 // import { nextLayout } from "@/lib/layoutUtils";
 
-
 // interface ChatMessage {
 //   role: "user" | "model";
 //   text: string;
@@ -425,7 +436,6 @@ export default function Dashboard() {
 // }
 
 // const STORAGE_KEY = "dashboard-widgets";
-
 
 // function useContainerWidth() {
 //   const ref = useRef<HTMLDivElement>(null);
@@ -457,7 +467,6 @@ export default function Dashboard() {
 
 //   const { ref: gridRef, width: gridWidth } = useContainerWidth();
 
-
 //   useEffect(() => {
 //     if (typeof window === "undefined") return;
 //     const raw = localStorage.getItem(STORAGE_KEY);
@@ -485,7 +494,6 @@ export default function Dashboard() {
 //     setWidgets([]);
 //     localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
 //   };
-
 
 //     if (!chatOpen) return;
 //     (async () => {
@@ -519,7 +527,6 @@ export default function Dashboard() {
 //     })();
 //   }, [chatOpen, conversationId]);
 
- 
 //   async function runAICommand() {
 //     if (!command.trim() && !attachedFile) return;
 //     setLoading(true);
@@ -589,7 +596,6 @@ export default function Dashboard() {
 //     }
 //   }
 
- 
 //   function addWidget(widget: Widget) {
 //     if (widget.type === "chat") return;
 //     setWidgets((prev) => {

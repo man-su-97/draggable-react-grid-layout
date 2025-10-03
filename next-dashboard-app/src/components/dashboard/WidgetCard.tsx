@@ -50,7 +50,7 @@ export default function WidgetCard({ widget, onRemove }: WidgetCardProps) {
 		(widget.type === "line" ||
 			widget.type === "bar" ||
 			widget.type === "pie") &&
-		widget.payload?.compare
+		widget.payload?.compareData && widget.payload.compareData.length > 0 
 			? `${baseTitle} — 📊 Comparison`
 			: baseTitle;
 

@@ -105,12 +105,13 @@
 
 "use client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DocumentPreviewRow } from "@/types/types";
 
 interface DocumentWidgetProps {
 	filename?: string;
 	fields?: string[];
 	rowCount?: number;
-	preview?: Record<string, string | number | null>[];
+	preview?: DocumentPreviewRow[];
 	summary?: string;
 	loading?: boolean;
 }
