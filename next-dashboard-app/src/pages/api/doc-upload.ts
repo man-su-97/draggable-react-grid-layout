@@ -208,7 +208,6 @@ export default async function handler(
 			rowCount = structured.rowCount;
 			preview = structured.preview;
 
-			//gemini call with data
 			const text = JSON.stringify({
 				fields,
 				rowCount,

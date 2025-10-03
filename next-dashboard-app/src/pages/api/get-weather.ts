@@ -1,5 +1,3 @@
-// Talks to external weather API, returns {description, icon, temp, coordinates}.
-
 
 import type { NextApiRequest, NextApiResponse } from "next";
 
