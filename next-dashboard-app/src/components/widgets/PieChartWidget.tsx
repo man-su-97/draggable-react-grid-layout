@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import {
   ResponsiveContainer,
@@ -7,16 +7,18 @@ import {
   Cell,
   Legend,
   Sector,
-  SectorProps,
-} from 'recharts'
+  Tooltip,
+} from 'recharts';
+import { ChartData } from '@/types/types';
 import { PieSectorDataItem } from 'recharts/types/polar/Pie';
+import { SectorProps } from 'recharts';
 
 type PieChartWidgetProps = {
-  data?: Array<{ label: string; value: number }>
-  title?: string
-}
+  data?: ChartData[];
+  title?: string;
+};
 
-type ActiveShapeProps = PieSectorDataItem & SectorProps
+type ActiveShapeProps = PieSectorDataItem & SectorProps;
 
 const COLORS = [
   'var(--color-chart-1)',
@@ -24,19 +26,19 @@ const COLORS = [
   'var(--color-chart-3)',
   'var(--color-chart-4)',
   'var(--color-chart-5)',
-]
+];
 
-const HIGHLIGHT_COLOR = 'var(--color-card-foreground)' 
+const HIGHLIGHT_COLOR = 'var(--color-card-foreground)';
 
 export default function PieChartWidget({ data, title }: PieChartWidgetProps) {
-  const demoData = [
+  const demoData: ChartData[] = [
     { label: 'Apples', value: 400 },
     { label: 'Bananas', value: 300 },
     { label: 'Cherries', value: 200 },
     { label: 'Dates', value: 100 },
-  ]
+  ];
 
-  const chartData = data ?? demoData
+  const chartData = data ?? demoData;
 
   return (
     <div className="w-full h-full flex flex-col bg-card border border-border rounded-md p-2">
@@ -53,7 +55,7 @@ export default function PieChartWidget({ data, title }: PieChartWidgetProps) {
             outerRadius="70%"
             paddingAngle={3}
             label
-            activeShape={(props:ActiveShapeProps) => (
+            activeShape={(props: ActiveShapeProps) => (
               <g>
                 <text
                   x={props.cx}
@@ -67,18 +69,19 @@ export default function PieChartWidget({ data, title }: PieChartWidgetProps) {
                 <Sector
                   {...props}
                   outerRadius={props.outerRadius + 8}
-                  fill={HIGHLIGHT_COLOR} 
+                  fill={HIGHLIGHT_COLOR}
                 />
               </g>
             )}
           >
-            {chartData.map((_, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            {chartData.map((_, i) => (
+              <Cell key={i} fill={COLORS[i % COLORS.length]} />
             ))}
           </Pie>
+          <Tooltip />
           <Legend />
         </PieChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import {
   ResponsiveContainer,
@@ -8,68 +8,73 @@ import {
   XAxis,
   YAxis,
   Legend,
-} from 'recharts'
+  Tooltip,
+} from 'recharts';
+import { ChartData } from '@/types/types';
 
 type LineChartWidgetProps = {
-  data?: Array<Record<string, number | string>>
-  title?: string
-}
+  data?: ChartData[];
+  title?: string;
+};
 
 export default function LineChartWidget({ data, title }: LineChartWidgetProps) {
-  const demoData = [
-    { label: 'Jan', sales: 400, revenue: 240 },
-    { label: 'Feb', sales: 300, revenue: 139 },
-    { label: 'Mar', sales: 200, revenue: 980 },
-    { label: 'Apr', sales: 278, revenue: 390 },
-    { label: 'May', sales: 189, revenue: 480 },
-    { label: 'Jun', sales: 239, revenue: 650 },
-    { label: 'Jul', sales: 349, revenue: 700 },
-  ]
+  // Fallback demo dataset
+  const demoData: ChartData[] = [
+    { label: 'Jan', value: 400 },
+    { label: 'Feb', value: 300 },
+    { label: 'Mar', value: 200 },
+    { label: 'Apr', value: 278 },
+    { label: 'May', value: 189 },
+    { label: 'Jun', value: 239 },
+    { label: 'Jul', value: 349 },
+  ];
 
-  const chartData = data ?? demoData
-  const colors = [
+  // Use incoming data or demo fallback
+  const chartData = data ?? demoData;
+
+  // Chart styling colors
+  const COLORS = [
     'var(--color-chart-1)',
     'var(--color-chart-2)',
     'var(--color-chart-3)',
     'var(--color-chart-4)',
     'var(--color-chart-5)',
-  ]
-
-  const dataKeys = Object.keys(chartData[0] || {}).filter((k) => k !== 'label')
+  ];
 
   return (
     <div className="w-full h-full flex flex-col bg-card border border-border rounded-md p-2">
       {title && <h3 className="text-lg font-semibold mb-2 text-card-foreground">{title}</h3>}
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+        <LineChart
+          data={chartData.map((d) => ({ label: d.label, value: d.value }))}
+          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-muted)" />
           <XAxis dataKey="label" stroke="var(--color-muted-foreground)" />
           <YAxis stroke="var(--color-muted-foreground)" />
+          <Tooltip />
           <Legend />
-          {dataKeys.map((key, index) => (
-            <Line
-              key={key}
-              type="monotone"
-              dataKey={key}
-              stroke={colors[index % colors.length]}
-              strokeWidth={2}
-              dot={{
-                r: 3,
-                stroke: 'var(--color-background)',
-                strokeWidth: 1,
-                fill: colors[index % colors.length],
-              }}
-              activeDot={{
-                r: 7,
-                fill: 'var(--color-primary)',
-                stroke: 'white',
-                strokeWidth: 2,
-                style: { filter: 'drop-shadow(0 0 6px var(--color-primary))' },
-              }}
-            />
-          ))}
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke={COLORS[0]}
+            strokeWidth={2}
+            dot={{
+              r: 3,
+              stroke: 'var(--color-background)',
+              strokeWidth: 1,
+              fill: COLORS[0],
+            }}
+            activeDot={{
+              r: 7,
+              fill: 'var(--color-primary)',
+              stroke: 'white',
+              strokeWidth: 2,
+              style: { filter: 'drop-shadow(0 0 6px var(--color-primary))' },
+            }}
+          />
         </LineChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }

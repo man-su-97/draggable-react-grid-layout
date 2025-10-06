@@ -9,7 +9,6 @@ const apiClient = axios.create({
   baseURL: `/`,
 });
 
-// ---- PATHS ----
 export async function listPaths(): Promise<StreamListResponse> {
   const { data } = await apiClient.get<StreamListResponse>("/api/listPaths");
   return data;

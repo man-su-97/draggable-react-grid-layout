@@ -1,0 +1,154 @@
+{
+  "54e4d92d-00a1-49f3-b5d7-dce68813ffb6": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "add a pie chart widget with indias gdp growth"
+        }
+      ],
+      "timestamp": 1759563760397
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "Widget generated"
+        }
+      ],
+      "timestamp": 1759563760397
+    }
+  ],
+  "9d100065-963b-45c3-a034-147028e85de5": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "hello"
+        }
+      ],
+      "timestamp": 1759565005460
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "```json\n{\n  \"type\": \"image\",\n  \"payload\": {\n    \"function\": \"create_image\",\n    \"args\": {\n      \"prompt\": \"A friendly robot waving hello\"\n    },\n    \"reply\": \"Hello! Here's a friendly robot waving hello.\"\n  }\n}\n```"
+        }
+      ],
+      "timestamp": 1759565005460
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "add a pie chart widget with indias gdp growth from 2014"
+        }
+      ],
+      "timestamp": 1759565027703
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "```json\n{\n  \"type\": \"pie\",\n  \"payload\": {\n    \"function\": \"create_pie_chart\",\n    \"args\": {\n      \"title\": \"India GDP Growth (2014-2018)\",\n      \"source\": \"gemini\",\n      \"data\": [\n        {\n          \"label\": \"2014\",\n          \"value\": 7.4\n        },\n        {\n          \"label\": \"2015\",\n          \"value\": 8.0\n        },\n        {\n          \"label\": \"2016\",\n          \"value\": 8.2\n        },\n        {\n          \"label\": \"2017\",\n          \"value\": 7.0\n        },\n        {\n          \"label\": \"2018\",\n          \"value\": 6.8\n        }\n      ],\n      \"groupBy\": \"year\",\n      \"metric\": \"GDP Growth\",\n      \"aggregation\": \"average\"\n    },\n    \"reply\": \"Here is a pie chart showing India's GDP growth from 2014 to 2018.\"\n  }\n}\n```"
+        }
+      ],
+      "timestamp": 1759565027703
+    }
+  ],
+  "bb31de30-7ac7-4c45-a501-9246fb7f6ab2": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Indias gdp growth from 2014 geberate a pie chart"
+        }
+      ],
+      "timestamp": 1759565533237
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "Widget generated"
+        }
+      ],
+      "timestamp": 1759565533237
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Show me a pie chart comparing India’s GDP contribution by sector (agriculture, industry, and services) for the year 2022"
+        }
+      ],
+      "timestamp": 1759565728057
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "Widget generated"
+        }
+      ],
+      "timestamp": 1759565728057
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Create a bar chart comparing quarterly sales for North America, Europe, and Asia in 2023"
+        }
+      ],
+      "timestamp": 1759565869324
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "Widget generated"
+        }
+      ],
+      "timestamp": 1759565869324
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Show me a line chart of annual carbon emissions in India from 2015 to 2022"
+        }
+      ],
+      "timestamp": 1759565902588
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "Widget generated"
+        }
+      ],
+      "timestamp": 1759565902588
+    }
+  ],
+  "c7d1b1b1-af46-497d-800a-e5c67ff43395": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Show me a line chart of annual carbon emissions in India from 2015 to 2022"
+        }
+      ],
+      "timestamp": 1759579487754
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "Widget generated"
+        }
+      ],
+      "timestamp": 1759579487754
+    }
+  ]
+}

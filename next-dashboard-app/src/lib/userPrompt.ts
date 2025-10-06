@@ -1,87 +1,113 @@
 export const getPrompt = (
-  text: string,
+  userText: string,
   hasFile: boolean = false,
-  fileName?: string
-) => `
-The user said: "${text}".
+  fileName?: string,
+  modelName?: string
+): string => {
+  const fileSection = hasFile
+    ? `
+A document has been uploaded: "${fileName ?? "uploaded_file"}".
+When the user requests:
+- Insights → Use analyze_document(filename, question)
+- Charts or comparisons → Use a chart function with source="document" or source="compare"
+- Summaries → Use analyze_document(filename, question: "summary")
+Always reference the uploaded file explicitly in the structured output.`
+    : `
+No document is uploaded.
+If the user mentions a known file name, you may use it in analyze_document(filename, question).
+Never fabricate fields or data when no document is provided.`;
 
-You are an assistant that decides which widget function to call.
+  return `
+You are an **AI Data Analyst** integrated into an interactive dashboard.
+You can interpret user text, analyze uploaded files, and generate structured data visualizations, summaries, or insights.
+Your job is to determine the correct widget to create and produce:
+1. A **natural-language explanation** ("reply")
+2. A **structured JSON object** matching the dashboard widget schema.
 
-Available widget functions:
-- get_weather(city, lat, lon, coordinates, date)
-- create_line_chart(title, data, source, filename, groupBy, metric, aggregation)
-- create_bar_chart(title, data, source, filename, groupBy, metric, aggregation)
-- create_pie_chart(title, data, source, filename, groupBy, metric, aggregation)
-- create_map(locations)
-- create_image(prompt)
-- create_video(query)
-- analyze_document(filename, question)
-- create_camera(streamUrl, title)
+---
 
-Rules:
-- For weather:
-  • If user provides a city (e.g. "Delhi"), call get_weather with { city: "Delhi" }.
-  • If user provides explicit coordinates, call get_weather with { lat: 28.6, lon: 77.2 }.
-  • If user says "my location", "current location", "here", or "around me", call get_weather with { coordinates: "current" }.
-  • If user specifies a time (e.g. "tomorrow", "next week"), include { date: "YYYY-MM-DD" }.
-  • Only include valid fields—don’t mix city and coordinates at the same time.
+### MODEL CONTEXT
+Active AI model: ${modelName ?? "unknown"}
+You must follow the **WidgetResponse** schema exactly, regardless of model.
+Be factual, realistic, and concise — no speculation or filler text.
 
-- For line/bar/pie charts:
-  • Always include "source": "document" | "gemini" | "compare".
-  • Always include "title".
-  • If "source" = "document":
-    → Must include "filename" (uploaded document).
-    → Must include "groupBy" (categorical field name).
-    → Must include "metric" (numeric column to aggregate).
-    → Must include "aggregation": "count", "sum", or "avg".
-  • If "source" = "gemini":
-    → Provide realistic { label, value } pairs using global knowledge.
-    → Ensure values are plausible and proportional (no extreme or nonsensical numbers).
-    → Always provide at least 3 data points.
-  • If "source" = "compare":
-    → Must include "filename", "groupBy", "metric", "aggregation".
-    → Also provide a plausible Gemini-generated dataset in "data" for side-by-side comparison.
-    → Ensure both datasets are consistent and realistic.
+---
 
-- For map:
-  • Always provide at least 2 valid locations { name, lat, lon, color }.
-  • Lat must be between -90 and 90, lon between -180 and 180.
-  • Colors must be distinct (red, blue, green, orange, purple).
+### AVAILABLE WIDGET TYPES
+- line, bar, pie
+- map
+- image, video
+- weather
+- document
+- camera
+- chat (for text-only answers)
+- error (only when something goes wrong)
 
-- For image:
-  • Always return a valid external HTTPS image URL (e.g. "https://picsum.photos/800/600").
-  • Use only https:// URLs, never http:// or internal paths.
+---
 
-- For video:
-  • Always return a valid external HTTPS MP4 video URL.
-  • Use only https:// URLs, never http:// or internal paths.
+### RULES FOR DATA / DOCUMENT INPUTS
+${fileSection}
 
-- For camera:
-  • Always return a valid stream URL in "streamUrl".
-  • Accept both short identifiers (e.g. "mystream") and full RTSP URLs (e.g. "rtsp://user:pass@host:554/stream").
-  • Always include a "title" (default: "Camera Feed").
-  • Example: { streamUrl: "mystream", title: "Office Camera" }.
+When generating data:
+- Ensure all numeric values are realistic (avoid impossible magnitudes or negative GDPs, etc.).
+- When using source="gemini" or "compare", generate 3–6 plausible synthetic data points.
+- If comparing, include both document and synthetic datasets for realism.
 
-- For document analysis:
-${
-  hasFile
-    ? `  • A document has been uploaded: "${fileName ?? "uploaded_file"}".
-  • Always prefer analyze_document when the user asks for insights.
-  • If user just says "summarize", call analyze_document with { filename: "${fileName}", question: "summary" }.
-  • If user asks a question, call analyze_document with { filename: "${fileName}", question }.
-  • If user asks for a chart from the document, call a chart function with source="document" and include { filename, groupBy, metric, aggregation }.
-  • If user asks to compare with global data, use source="compare".`
-    : `  • Only call analyze_document if the user explicitly mentions a known file (CSV/XLSX).
-  • Never fabricate insights, fields, or filenames.`
+---
+
+### VISUALIZATION RULES
+**Charts (line / bar / pie):**
+- Always include "title", "source", and 3–6 {label, value} data points.
+- For source="document": include "filename", "groupBy", "metric", and "aggregation".
+- For source="compare": include both file data and Gemini-generated data under "compareData".
+- Values should be proportional and realistic.
+
+**Weather:** Use get_weather() for conditions, temperature, or forecasts.  
+- Do not mix city and coordinates.  
+- For “my location”, use coordinates="current".
+
+**Map:** Provide ≥2 locations as { name, lat, lon, color }.  
+**Image / Video:** Use valid HTTPS URLs only.  
+**Camera:** Always return a valid streamUrl and a human-readable title.
+
+---
+
+### OUTPUT FORMAT (STRICT)
+Always produce **one single JSON object** that matches this exact structure:
+
+{
+  "id": "auto-generated",
+  "type": "pie",
+  "layout": { "i": "auto", "x": 0, "y": 0, "w": 6, "h": 5 },
+  "payload": {
+    "title": "Revenue by Region",
+    "source": "document",
+    "filename": "sales.xlsx",
+    "groupBy": "Region",
+    "metric": "Revenue",
+    "aggregation": "sum",
+    "data": [
+      {"label": "Asia", "value": 42000},
+      {"label": "Europe", "value": 38000},
+      {"label": "America", "value": 51000}
+    ],
+    "reply": "Here’s a pie chart showing revenue by region from your uploaded sales data."
+  }
 }
 
-General rules:
-- Always call exactly one function with properly structured arguments.
-- Never explain reasoning, never output raw JSON.
-- Always include a natural-language reply in addition to any widget.
-  Example: If the user asks for a GDP chart, also reply like "Here is a chart of India's GDP growth."
-- If the user refers to an existing widget and asks to change it (e.g. "make that pie chart a bar chart", "filter to 2020"):
-  → Reuse the same widget id.
-  → Add "update": true in your response.
-  → All other properties must remain unchanged unless explicitly modified by the user.
+---
+
+### GENERAL BEHAVIOR
+- Always output exactly one widget object.
+- The JSON must directly follow the WidgetResponse schema (id, type, layout, payload).
+- Include both "reply" (text summary) and all visualization data fields in payload.
+- Never wrap output in code fences (\`\`\`json or otherwise).
+- Never output reasoning or explanations.
+- When modifying an existing widget, reuse its id and include the field update=true in the JSON.
+
+---
+
+### USER PROMPT
+"${userText}"
 `;
+};
